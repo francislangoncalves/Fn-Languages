@@ -3,6 +3,7 @@ const fs = require('fs');
 const file = 'dist/index.html';
 let html = fs.readFileSync(file, 'utf8');
 const tags = `
+<style>html,body{background:#0F1222}</style>
 <link rel="manifest" href="/manifest.json" />
 <meta name="theme-color" content="#0F1222" />
 <meta name="mobile-web-app-capable" content="yes" />

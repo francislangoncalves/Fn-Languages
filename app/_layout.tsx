@@ -19,8 +19,9 @@ export default function RootLayout() {
     );
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar style="light" />
+      <View style={{ flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' }}>
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: C.bg },
@@ -38,6 +39,7 @@ export default function RootLayout() {
         <Stack.Screen name="usage" options={{ title: 'Uso e limites' }} />
         <Stack.Screen name="lesson" options={{ title: 'Lição' }} />
       </Stack>
-    </>
+      </View>
+    </View>
   );
 }

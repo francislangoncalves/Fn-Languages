@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ProfileCard from '../src/components/ProfileCard';
 import { EXTRA_PHASES, FREE_ID, isDone, isUnlocked, MAIN_PHASES, nextScenario, Phase, phaseFor, phaseProgress, scenarioFor, scenarioKey, Scenario } from '../src/curriculum';
 import { lessonsFor } from '../src/lessons';
+import { useIsWide } from '../src/layout';
 import { notify } from '../src/dialog';
 import { LANGS, PERSONAS, personaName } from '../src/personas';
 import { useActiveProfile, useStore } from '../src/store';
@@ -13,6 +14,7 @@ import { Lang, PersonaId } from '../src/types';
 
 export default function Home() {
   const router = useRouter();
+  const wide = useIsWide();
   const profile = useActiveProfile();
   const { updateProfile, effectiveKey } = useStore();
   const hasKey = useStore((s) => !!s.effectiveKey(s.activeId));
@@ -80,7 +82,9 @@ export default function Home() {
   };
 
   return (
-    <ScrollView contentContainerStyle={s.container}>
+    <ScrollView contentContainerStyle={[s.container, wide && s.containerWide]}>
+      <View style={{ flexDirection: wide ? 'row' : 'column', gap: 24, alignItems: 'flex-start' }}>
+        <View style={[wide ? s.left : { width: '100%' }]}>
       <View style={s.topRow}>
         <View style={{ flex: 1 }}>
           <ProfileCard profile={profile} onPress={() => router.push('/profiles')} right={<Ionicons name="swap-horizontal" size={22} color={C.muted} />} />
@@ -131,6 +135,8 @@ export default function Home() {
         </Pressable>
       )}
 
+        </View>
+        <View style={{ flex: 1, width: '100%' }}>
       {/* Fase 0: introdução e pronúncia */}
       <View style={s.phaseHead}>
         <Text style={s.phaseTitle}>🌱 Fase 0 · Introdução & Pronúncia</Text>
@@ -155,12 +161,16 @@ export default function Home() {
 
       {MAIN_PHASES.map((raw) => renderPhase(phaseFor(raw, profile.field)))}
       {EXTRA_PHASES.map((raw) => renderPhase(phaseFor(raw, profile.field)))}
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
   container: { padding: 16, paddingBottom: 50 },
+  containerWide: { padding: 24 },
+  left: { width: 360, ...({ position: 'sticky', top: 16 } as any) },
   topRow: { flexDirection: 'row' },
   tools: { flexDirection: 'row', gap: 10, marginTop: 10 },
   tool: { flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 14, backgroundColor: C.card },

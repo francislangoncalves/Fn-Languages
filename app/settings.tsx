@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { narrow } from '../src/layout';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { confirmAction, notify } from '../src/dialog';
 import { validateKey } from '../src/openai';
@@ -58,7 +59,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.c} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={[s.c, narrow]} keyboardShouldPersistTaps="handled">
       <Text style={s.section}>PROVEDOR DE IA</Text>
       <Seg
         value={settings.provider}

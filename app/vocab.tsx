@@ -1,3 +1,4 @@
+import { narrow } from '../src/layout';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -16,7 +17,7 @@ export default function Vocab() {
   const speed = BAND_INFO[bandOf(levelFromXp(profile.xp))].speed;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={[{ flex: 1 }, narrow]}>
       <View style={s.head}>
         <Text style={s.title}>
           {items.length} {items.length === 1 ? 'palavra' : 'palavras'}
@@ -28,7 +29,7 @@ export default function Vocab() {
       <FlatList
         data={items}
         keyExtractor={(v) => v.lang + v.term}
-        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
+        contentContainerStyle={[{ padding: 16, paddingTop: 4 }, narrow]}
         ListEmptyComponent={<Text style={s.empty}>Nenhuma palavra ainda. Converse com o tutor — novas expressões aparecem aqui automaticamente.</Text>}
         renderItem={({ item }) => (
           <View style={s.row}>

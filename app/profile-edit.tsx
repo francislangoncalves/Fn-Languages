@@ -1,3 +1,4 @@
+import { narrow } from '../src/layout';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
@@ -37,7 +38,7 @@ export default function ProfileEdit() {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.c} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={[s.c, narrow]} keyboardShouldPersistTaps="handled">
       {first ? <Text style={s.hello}>Bem-vindo! 👋 Crie seu primeiro perfil para começar a trilha.</Text> : null}
 
       <Text style={s.label}>NOME</Text>

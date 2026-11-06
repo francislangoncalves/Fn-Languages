@@ -1,3 +1,4 @@
+import { narrow } from '../src/layout';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -52,7 +53,7 @@ export default function Usage() {
   const max7 = Math.max(1, ...days.map((d) => sum('req', d)));
 
   return (
-    <ScrollView contentContainerStyle={s.c}>
+    <ScrollView contentContainerStyle={[s.c, narrow]}>
       {blocked && (
         <View style={s.block}>
           <Text style={s.blockTitle}>⛔ Limite atingido</Text>

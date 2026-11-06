@@ -42,6 +42,7 @@ Depois: **Configurações → cole sua OpenAI API Key → Validar e salvar**.
 Groq = Llama 3.3 70B (chat) + Whisper (sua voz); voz do tutor = voz do aparelho/navegador (grátis). O plano gratuito tem limite de uso; se aparecer erro 429, espere um pouco. Para voz realista, troque para **OpenAI (pago)** em Configurações.
 
 ## Novidades
+- **Layout responsivo**: no PC (≥900 px) a home e o chat usam duas colunas e o conteúdo é centralizado; no celular continua igual.
 - **Uso e limites** (tela "Uso"): cota da chave lida dos cabeçalhos `x-ratelimit-*` (requisições/dia e tokens/min, com contagem regressiva do reset), contagem local por perfil e aviso quando bater o limite (429).
 - **Área profissional** (Tecnologia ou Pedagogia) por perfil: adapta a Fase 3 e os exemplos do tutor.
 - **Fase extra · Comunidade & Igreja Católica** (Missa, paróquia, Natal/Advento), liberada desde o início.

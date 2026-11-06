@@ -1,3 +1,4 @@
+import { narrow } from '../src/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -87,7 +88,7 @@ export default function LessonScreen() {
   if (quiz) {
     const q = quiz[qi];
     return (
-      <ScrollView contentContainerStyle={s.c}>
+      <ScrollView contentContainerStyle={[s.c, narrow]}>
         <Stack.Screen options={{ title: 'Praticar' }} />
         {result ? (
           <View style={s.result}>
@@ -142,7 +143,7 @@ export default function LessonScreen() {
 
   /* ───────── Conteúdo ───────── */
   return (
-    <ScrollView contentContainerStyle={s.c}>
+    <ScrollView contentContainerStyle={[s.c, narrow]}>
       <Stack.Screen options={{ title: `${lesson.emoji} Lição` }} />
       <Text style={s.h1}>{lesson.title}</Text>
       <Text style={s.p}>{lesson.intro}</Text>

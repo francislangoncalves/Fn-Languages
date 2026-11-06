@@ -11,6 +11,7 @@ import { confirmAction, notify } from '../src/dialog';
 import { BAND_INFO, bandOf, levelFromXp } from '../src/levels';
 import { askTutor, transcribe } from '../src/openai';
 import { getProvider } from '../src/provider';
+import { useIsWide } from '../src/layout';
 import { buildSystemPrompt, LANGS, PERSONAS, personaName } from '../src/personas';
 import { chatKeyFor, useActiveProfile, useStore } from '../src/store';
 import { C } from '../src/theme';
@@ -20,6 +21,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 export default function Chat() {
   const router = useRouter();
+  const wide = useIsWide();
   const params = useLocalSearchParams<{ scenario?: string; persona?: string }>();
   const scenarioId = params.scenario ?? FREE_ID;
   const personaId = (params.persona as PersonaId) ?? 'friend';
@@ -277,7 +279,8 @@ export default function Chat() {
           ),
         }}
       />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+      <KeyboardAvoidingView style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <View style={wide ? s.side : undefined}>
         <View style={s.statusRow}>
           <Text style={s.badge}>{LANGS[profile.lang].flag} Nv {level} · {BAND_INFO[band].cefr}</Text>
           {!free && (
@@ -297,6 +300,9 @@ export default function Chat() {
         )}
 
         <Avatar emoji={emoji} state={avatar} level={meter} />
+        </View>
+
+        <View style={{ flex: 1 }}>
 
         {toast && (
           <View style={s.toast}>
@@ -368,6 +374,7 @@ export default function Chat() {
           {settings.handsFree ? 'Hands-free ativo: fale quando o microfone abrir' : settings.recordMode === 'hold' ? 'Segure o microfone para falar' : 'Toque no microfone para gravar/parar'}
           {Platform.OS !== 'web' ? ` · Para digitar em ${LANGS[profile.lang].label}, adicione o teclado desse idioma (tecla 🌐)` : ''}
         </Text>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -375,6 +382,7 @@ export default function Chat() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
+  side: { width: 340, borderRightWidth: 1, borderRightColor: C.border, paddingTop: 12 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 2 },
   badge: { color: C.muted, fontSize: 12, fontWeight: '700' },
   goals: { backgroundColor: C.card, marginHorizontal: 12, marginTop: 8, padding: 12, borderRadius: 12, gap: 4 },

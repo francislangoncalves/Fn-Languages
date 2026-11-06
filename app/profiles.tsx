@@ -1,3 +1,4 @@
+import { narrow } from '../src/layout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -12,7 +13,7 @@ export default function Profiles() {
   const { profiles, activeId, setActive } = useStore();
 
   return (
-    <ScrollView contentContainerStyle={s.c}>
+    <ScrollView contentContainerStyle={[s.c, narrow]}>
       <Text style={s.count}>{profiles.length}/{MAX_PROFILES} perfis · cada um com progresso, histórico e chave próprios</Text>
       {profiles.map((p) => (
         <View key={p.id} style={{ marginBottom: 10 }}>
