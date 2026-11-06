@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { dayKey, levelFromXp, nextStreak } from './levels';
 import { scenarioKey } from './curriculum';
+import { resetModelCache } from './openai';
 import { ProviderId, PROVIDERS, setProvider } from './provider';
 import { ChatMessage, Lang, Profile, VocabItem } from './types';
 
@@ -147,6 +148,7 @@ export const useStore = create<State>((set, get) => {
         if (key) await secure.set(KEY_NAME[pid], key);
         else await secure.del(KEY_NAME[pid]);
       } catch {}
+      resetModelCache();
       set({ globalKey: key, allKeys: { ...get().allKeys, [pid]: key } });
     },
 
@@ -154,6 +156,7 @@ export const useStore = create<State>((set, get) => {
       const settings = { ...get().settings, ...p };
       if (p.provider) {
         setProvider(p.provider);
+        resetModelCache();
         // OpenAI usa voz própria por padrão; Groq usa a do aparelho
         if (!PROVIDERS[p.provider].hasTts) settings.voiceEngine = 'device';
         set({ globalKey: get().allKeys[p.provider] });
