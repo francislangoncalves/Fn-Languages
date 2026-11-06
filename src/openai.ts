@@ -65,7 +65,8 @@ const PREF_CHAT = [
   'llama-3.1-70b-versatile',
   'llama-3.1-8b-instant',
 ];
-const PREF_STT = ['whisper-large-v3-turbo', 'whisper-large-v3', 'distil-whisper-large-v3-en'];
+// large-v3 é mais preciso (principalmente em polonês); turbo é o plano B
+const PREF_STT = ['whisper-large-v3', 'whisper-large-v3-turbo', 'distil-whisper-large-v3-en'];
 const NOT_CHAT = /whisper|tts|playai|guard|safeguard|orpheus|embed|moderation|compound/i;
 
 const resolved: { chat?: string; stt?: string; ids?: string[] } = {};
@@ -198,7 +199,7 @@ export async function askTutor(a: ChatArgs): Promise<TutorJson> {
   return parseTutorJson(data.choices?.[0]?.message?.content ?? '');
 }
 
-export async function transcribe(apiKey: string, uri: string, lang: Lang): Promise<string> {
+export async function transcribe(apiKey: string, uri: string, lang: Lang, hint = ''): Promise<string> {
   let file: Blob | null = null;
   let ext = 'm4a';
   if (Platform.OS === 'web') {
@@ -211,7 +212,10 @@ export async function transcribe(apiKey: string, uri: string, lang: Lang): Promi
     if (file) form.append('file', file, `speech.${ext}`);
     else form.append('file', { uri, name: 'speech.m4a', type: 'audio/m4a' } as any);
     form.append('model', model);
-    form.append('language', LANGS[lang].whisper);
+    form.append('language', LANGS[lang].whisper); // idioma do CURSO (não depende do teclado)
+    form.append('temperature', '0');
+    // A última fala do tutor serve de contexto: melhora nomes, termos e acentos
+    if (hint.trim()) form.append('prompt', hint.trim().slice(-200));
     return form;
   };
   const groq = getProvider().id === 'groq';

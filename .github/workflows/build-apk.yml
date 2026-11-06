@@ -1,0 +1,54 @@
+name: Build Android APK
+
+# Como usar: GitHub → aba Actions → "Build Android APK" → Run workflow.
+# Quando terminar (~10-15 min), o APK fica em Releases (e também como artefato da execução).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar projeto Android (expo prebuild)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Compilar APK (release, assinado com a chave de debug — instalável)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Renomear
+        run: cp android/app/build/outputs/apk/release/app-release.apk LinguaTutor.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LinguaTutor-apk
+          path: LinguaTutor.apk
+
+      - name: Publicar em Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "apk-${{ github.run_number }}" LinguaTutor.apk \
+            --title "Lingua Tutor APK #${{ github.run_number }}" \
+            --notes "APK para Android. Baixe LinguaTutor.apk, abra no celular e permita 'instalar apps desconhecidos' se o Android pedir."

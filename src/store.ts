@@ -31,6 +31,8 @@ export interface Settings {
   autoSpeak: boolean;
   recordMode: 'hold' | 'tap';
   handsFree: boolean;
+  /** Mostra o texto reconhecido na caixa para você revisar antes de enviar */
+  reviewTranscript: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -41,6 +43,7 @@ const DEFAULTS: Settings = {
   autoSpeak: true,
   recordMode: 'hold',
   handsFree: false,
+  reviewTranscript: true,
 };
 
 export const chatKeyFor = (lang: Lang, scenarioId: string, persona?: string) =>

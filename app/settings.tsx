@@ -135,6 +135,12 @@ export default function SettingsScreen() {
       <Text style={s.section}>MICROFONE</Text>
       <Seg value={settings.recordMode} onChange={up('recordMode')} options={[{ v: 'hold', l: 'Segurar para falar' }, { v: 'tap', l: 'Tocar para gravar' }]} />
       <Toggle
+        label="Revisar o texto antes de enviar"
+        hint="Depois de falar, o texto reconhecido aparece na caixa para você corrigir. Ignorado no modo hands-free."
+        value={settings.reviewTranscript}
+        onChange={up('reviewTranscript')}
+      />
+      <Toggle
         label="Modo hands-free"
         hint="Depois que o tutor fala, o microfone abre sozinho e envia quando você faz silêncio."
         value={settings.handsFree}

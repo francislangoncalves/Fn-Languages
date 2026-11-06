@@ -21,7 +21,12 @@
       "package": "com.example.linguatutor",
       "permissions": [
         "RECORD_AUDIO"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4C5BD4"
+      },
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -44,6 +49,12 @@
       "shortName": "LinguaTutor",
       "backgroundColor": "#0F1222",
       "themeColor": "#0F1222"
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1222"
     }
   }
 }

@@ -121,11 +121,17 @@ export default function Chat() {
     if (!uri) return setAvatar('idle');
     setAvatar('thinking');
     try {
-      const text = await transcribe(apiKey(), uri, profileRef.current.lang);
+      const lastTutor = [...msgsRef.current].reverse().find((m) => m.role === 'assistant')?.text ?? '';
+      const text = await transcribe(apiKey(), uri, profileRef.current.lang, lastTutor);
       if (!text) {
         setAvatar('idle');
         setError('Não entendi o áudio. Tente de novo.');
         if (settingsRef.current.handsFree && focusedRef.current) beginListening();
+        return;
+      }
+      if (settingsRef.current.reviewTranscript && !settingsRef.current.handsFree) {
+        setInput(text); // o aluno confere/corrige e toca em enviar
+        setAvatar('idle');
         return;
       }
       await sendText(text, true);
@@ -229,7 +235,11 @@ export default function Chat() {
   }, [messages.length]);
 
   const onMicPressIn = () => settings.recordMode === 'hold' && beginListening();
-  const onMicPressOut = () => settings.recordMode === 'hold' && finishListening();
+  const onMicPressOut = () => {
+    if (settings.recordMode !== 'hold') return;
+    // pequena folga: quem solta o botão cedo não tem a última palavra cortada
+    setTimeout(() => finishListening(), 450);
+  };
   const onMicPress = () => {
     if (settings.recordMode !== 'tap') return;
     recordingRef.current ? finishListening() : beginListening();
@@ -326,6 +336,10 @@ export default function Chat() {
             placeholder={`Escreva em ${LANGS[profile.lang].name.split(' ')[0]}…`}
             placeholderTextColor={C.muted}
             multiline
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="off"
+            {...({ lang: profile.lang } as any)}
             onSubmitEditing={submitText}
             onKeyPress={(e) => {
               const ne = e.nativeEvent as any;
@@ -352,6 +366,7 @@ export default function Chat() {
         </View>
         <Text style={s.tip}>
           {settings.handsFree ? 'Hands-free ativo: fale quando o microfone abrir' : settings.recordMode === 'hold' ? 'Segure o microfone para falar' : 'Toque no microfone para gravar/parar'}
+          {Platform.OS !== 'web' ? ` · Para digitar em ${LANGS[profile.lang].label}, adicione o teclado desse idioma (tecla 🌐)` : ''}
         </Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
