@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Lingua Tutor",
+    "slug": "lingua-tutor",
+    "version": "1.0.0",
+    "scheme": "linguatutor",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.example.linguatutor",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "O microfone é usado para você praticar conversação falada com o tutor.",
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.example.linguatutor",
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "O microfone é usado para você praticar conversação falada com o tutor."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./public/favicon.png",
+      "name": "Lingua Tutor",
+      "shortName": "LinguaTutor",
+      "backgroundColor": "#0F1222",
+      "themeColor": "#0F1222"
+    }
+  }
+}
