@@ -4,10 +4,11 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { dayKey, levelFromXp, nextStreak } from './levels';
 import { scenarioKey } from './curriculum';
+import { ProviderId, PROVIDERS, setProvider } from './provider';
 import { ChatMessage, Lang, Profile, VocabItem } from './types';
 
 export const MAX_PROFILES = 5;
-const KEY_GLOBAL = 'openai_api_key'; // mesma chave do app antigo → vira a "chave global"
+const KEY_NAME: Record<ProviderId, string> = { openai: 'openai_api_key', groq: 'groq_api_key' };
 const KEY_SETTINGS = 'settings_v1';
 const KEY_PROFILES = 'profiles_v2';
 const ownKeyName = (id: string) => `profile_key_${id}`;
@@ -20,6 +21,7 @@ const secure = {
 };
 
 export interface Settings {
+  provider: ProviderId;
   model: 'gpt-4o-mini' | 'gpt-4o';
   voiceEngine: 'openai' | 'device';
   voice: 'alloy' | 'echo' | 'nova' | 'shimmer' | 'onyx' | 'fable';
@@ -29,8 +31,9 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
+  provider: 'groq',
   model: 'gpt-4o-mini',
-  voiceEngine: 'openai',
+  voiceEngine: 'device',
   voice: 'alloy',
   autoSpeak: true,
   recordMode: 'hold',
@@ -59,7 +62,8 @@ export interface XpResult {
 
 interface State {
   ready: boolean;
-  globalKey: string;
+  globalKey: string; // chave global do provedor ativo
+  allKeys: Record<ProviderId, string>;
   ownKeys: Record<string, string>;
   profiles: Profile[];
   activeId: string | null;
@@ -98,16 +102,19 @@ export const useStore = create<State>((set, get) => {
   return {
     ready: false,
     globalKey: '',
+    allKeys: { groq: '', openai: '' },
     ownKeys: {},
     profiles: [],
     activeId: null,
     settings: DEFAULTS,
 
     load: async () => {
-      let globalKey = '';
-      try {
-        globalKey = (await secure.get(KEY_GLOBAL)) ?? '';
-      } catch {}
+      const allKeys: Record<ProviderId, string> = { groq: '', openai: '' };
+      for (const id of Object.keys(KEY_NAME) as ProviderId[]) {
+        try {
+          allKeys[id] = (await secure.get(KEY_NAME[id])) ?? '';
+        } catch {}
+      }
       let settings = DEFAULTS;
       let profiles: Profile[] = [];
       let activeId: string | null = null;
@@ -129,20 +136,28 @@ export const useStore = create<State>((set, get) => {
         } catch {}
       }
       if (!profiles.find((p) => p.id === activeId)) activeId = profiles[0]?.id ?? null;
-      set({ globalKey, ownKeys, settings, profiles, activeId, ready: true });
+      setProvider(settings.provider);
+      set({ allKeys, globalKey: allKeys[settings.provider], ownKeys, settings, profiles, activeId, ready: true });
     },
 
     setGlobalKey: async (k) => {
       const key = k.trim();
+      const pid = get().settings.provider;
       try {
-        if (key) await secure.set(KEY_GLOBAL, key);
-        else await secure.del(KEY_GLOBAL);
+        if (key) await secure.set(KEY_NAME[pid], key);
+        else await secure.del(KEY_NAME[pid]);
       } catch {}
-      set({ globalKey: key });
+      set({ globalKey: key, allKeys: { ...get().allKeys, [pid]: key } });
     },
 
     updateSettings: (p) => {
       const settings = { ...get().settings, ...p };
+      if (p.provider) {
+        setProvider(p.provider);
+        // OpenAI usa voz própria por padrão; Groq usa a do aparelho
+        if (!PROVIDERS[p.provider].hasTts) settings.voiceEngine = 'device';
+        set({ globalKey: get().allKeys[p.provider] });
+      }
       set({ settings });
       AsyncStorage.setItem(KEY_SETTINGS, JSON.stringify(settings)).catch(() => {});
     },

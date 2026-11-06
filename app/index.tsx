@@ -49,7 +49,7 @@ export default function Home() {
       {!hasKey && (
         <Pressable style={s.warn} onPress={() => router.push('/settings')}>
           <Ionicons name="key" size={18} color={C.warn} />
-          <Text style={s.warnText}>Nenhuma chave da OpenAI para este perfil. Toque para configurar.</Text>
+          <Text style={s.warnText}>Falta a chave de API (grátis no Groq). Toque para configurar.</Text>
         </Pressable>
       )}
 

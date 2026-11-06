@@ -5,6 +5,7 @@ import * as Speech from 'expo-speech';
 import { arrayBufferToBase64 } from './b64';
 import { synthesize } from './openai';
 import { LANGS } from './personas';
+import { getProvider } from './provider';
 import { Settings } from './store';
 import { Lang } from './types';
 
@@ -41,7 +42,7 @@ export async function speak(text: string, lang: Lang, settings: Settings, apiKey
   const token = speakToken;
   await setPlaybackMode();
 
-  if (settings.voiceEngine === 'device') return speakDevice(text, lang, speed);
+  if (settings.voiceEngine === 'device' || !getProvider().hasTts) return speakDevice(text, lang, speed);
 
   try {
     const ck = `${settings.voice}|${speed}|${text}`;

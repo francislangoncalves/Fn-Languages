@@ -60,16 +60,16 @@ export default function ProfileEdit() {
         ))}
       </View>
 
-      <Text style={s.label}>CHAVE DA OPENAI</Text>
+      <Text style={s.label}>CHAVE DE API</Text>
       <View style={s.toggle}>
         <View style={{ flex: 1 }}>
           <Text style={s.tTitle}>Usar chave própria deste perfil</Text>
-          <Text style={s.hint}>Desligado = usa a chave global de Configurações.</Text>
+          <Text style={s.hint}>Desligado = usa a chave global do provedor (Configurações).</Text>
         </View>
         <Switch value={useOwn} onValueChange={setUseOwn} trackColor={{ true: C.primary }} />
       </View>
       {useOwn && (
-        <TextInput style={[s.input, { marginTop: 10 }]} value={key} onChangeText={setKey} placeholder="sk-..." placeholderTextColor={C.muted} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+        <TextInput style={[s.input, { marginTop: 10 }]} value={key} onChangeText={setKey} placeholder="gsk_... ou sk-..." placeholderTextColor={C.muted} autoCapitalize="none" autoCorrect={false} secureTextEntry />
       )}
 
       <Text style={s.label}>TRILHA</Text>

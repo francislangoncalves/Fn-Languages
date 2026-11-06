@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { confirmAction, notify } from '../src/dialog';
 import { validateKey } from '../src/openai';
+import { PROVIDERS, ProviderId } from '../src/provider';
 import { Settings, useStore } from '../src/store';
 import { C } from '../src/theme';
 
@@ -34,6 +35,8 @@ export default function SettingsScreen() {
   const [key, setKey] = useState(apiKey);
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const prov = PROVIDERS[settings.provider];
+  useEffect(() => setKey(apiKey), [apiKey, settings.provider]);
   const up = <K extends keyof Settings>(k: K) => (v: Settings[K]) => updateSettings({ [k]: v } as Partial<Settings>);
 
   async function save() {
@@ -56,12 +59,35 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.c} keyboardShouldPersistTaps="handled">
-      <Text style={s.section}>CHAVE GLOBAL DA OPENAI</Text>
+      <Text style={s.section}>PROVEDOR DE IA</Text>
+      <Seg
+        value={settings.provider}
+        onChange={(v: ProviderId) => updateSettings({ provider: v })}
+        options={[{ v: 'groq', l: 'Groq (grátis)' }, { v: 'openai', l: 'OpenAI (pago)' }]}
+      />
+      {prov.free && (
+        <View style={s.guide}>
+          <Text style={s.guideTitle}>Como pegar a chave grátis (2 min)</Text>
+          <Text style={s.guideStep}>1. Toque no botão abaixo e entre no Groq com Google/GitHub/e-mail (sem cartão).</Text>
+          <Text style={s.guideStep}>2. Clique em "Create API Key", dê um nome e copie a chave (começa com gsk_).</Text>
+          <Text style={s.guideStep}>3. Volte aqui, cole no campo abaixo e toque em "Validar e salvar".</Text>
+          <Pressable style={[s.btn, { marginTop: 10 }]} onPress={() => Linking.openURL(prov.keyUrl)}>
+            <Text style={s.btnText}>Abrir console.groq.com/keys</Text>
+          </Pressable>
+        </View>
+      )}
+      {!prov.free && (
+        <Pressable style={[s.btn, { marginTop: 10, backgroundColor: C.cardAlt }]} onPress={() => Linking.openURL(prov.keyUrl)}>
+          <Text style={s.btnText}>Abrir platform.openai.com/api-keys (pago)</Text>
+        </Pressable>
+      )}
+
+      <Text style={s.section}>CHAVE GLOBAL · {prov.label.toUpperCase()}</Text>
       <TextInput
         style={s.input}
         value={key}
         onChangeText={setKey}
-        placeholder="sk-..."
+        placeholder={prov.keyHint}
         placeholderTextColor={C.muted}
         autoCapitalize="none"
         autoCorrect={false}
@@ -75,14 +101,24 @@ export default function SettingsScreen() {
           <Text style={s.btnText}>{show ? 'Ocultar' : 'Mostrar'}</Text>
         </Pressable>
       </View>
-      <Text style={s.hint}>Usada pelos perfis que não têm chave própria (defina uma por perfil em Perfis → editar). Fica no cofre seguro do aparelho e só é enviada à OpenAI.</Text>
+      <Text style={s.hint}>Usada pelos perfis que não têm chave própria (defina uma por perfil em Perfis → editar). Fica no cofre seguro do aparelho e só é enviada ao provedor escolhido.</Text>
 
-      <Text style={s.section}>MODELO</Text>
-      <Seg value={settings.model} onChange={up('model')} options={[{ v: 'gpt-4o-mini', l: 'GPT-4o mini' }, { v: 'gpt-4o', l: 'GPT-4o' }]} />
+      {prov.id === 'openai' ? (
+        <>
+          <Text style={s.section}>MODELO</Text>
+          <Seg value={settings.model} onChange={up('model')} options={[{ v: 'gpt-4o-mini', l: 'GPT-4o mini' }, { v: 'gpt-4o', l: 'GPT-4o' }]} />
+        </>
+      ) : (
+        <Text style={s.hint}>Modelo: Llama 3.3 70B (chat) + Whisper large-v3-turbo (sua voz). A voz do tutor usa a voz do aparelho/navegador.</Text>
+      )}
 
       <Text style={s.section}>VOZ DO TUTOR</Text>
-      <Seg value={settings.voiceEngine} onChange={up('voiceEngine')} options={[{ v: 'openai', l: 'OpenAI (realista)' }, { v: 'device', l: 'Voz do aparelho' }]} />
-      {settings.voiceEngine === 'openai' && (
+      {prov.hasTts ? (
+        <Seg value={settings.voiceEngine} onChange={up('voiceEngine')} options={[{ v: 'openai', l: 'OpenAI (realista)' }, { v: 'device', l: 'Voz do aparelho' }]} />
+      ) : (
+        <Text style={s.hint}>Voz do aparelho (gratuita).</Text>
+      )}
+      {prov.hasTts && settings.voiceEngine === 'openai' && (
         <>
           <View style={{ height: 10 }} />
           <View style={s.wrap}>
@@ -123,6 +159,9 @@ const s = StyleSheet.create({
   input: { backgroundColor: C.card, color: C.text, borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1, borderColor: C.border },
   btn: { backgroundColor: C.primary, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '700' },
+  guide: { backgroundColor: C.card, borderRadius: 14, padding: 14, marginTop: 12, borderWidth: 1, borderColor: C.primary + '66' },
+  guideTitle: { color: C.text, fontWeight: '800', marginBottom: 6 },
+  guideStep: { color: C.muted, fontSize: 13, lineHeight: 19, marginTop: 3 },
   hint: { color: C.muted, fontSize: 12, marginTop: 8, lineHeight: 17 },
   seg: { flexDirection: 'row', backgroundColor: C.card, borderRadius: 12, padding: 4 },
   segBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 9 },

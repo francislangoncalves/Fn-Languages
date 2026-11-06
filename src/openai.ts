@@ -2,7 +2,9 @@ import { Platform } from 'react-native';
 import { LANGS, startInstruction } from './personas';
 import { ChatMessage, Lang, TutorJson } from './types';
 
-const BASE = 'https://api.openai.com/v1';
+import { getProvider } from './provider';
+
+const BASE_ = () => getProvider().base;
 
 export class OpenAIError extends Error {}
 
@@ -13,9 +15,9 @@ async function check(res: Response): Promise<Response> {
     const j = await res.json();
     detail = j?.error?.message ?? '';
   } catch {}
-  if (res.status === 401) throw new OpenAIError('Chave de API inválida. Verifique em Configurações.');
-  if (res.status === 429) throw new OpenAIError('Limite/saldo da API excedido (429). ' + detail);
-  throw new OpenAIError(`Erro da OpenAI (${res.status}). ${detail}`);
+  if (res.status === 401) throw new OpenAIError('Chave de API inválida para este provedor. Verifique em Configurações.');
+  if (res.status === 429) throw new OpenAIError('Limite de uso atingido (429): espere um pouco e tente de novo. ' + detail);
+  throw new OpenAIError(`Erro do provedor de IA (${res.status}). ${detail}`);
 }
 
 function parseTutorJson(raw: string): TutorJson {
@@ -80,7 +82,7 @@ export async function askTutor(a: ChatArgs): Promise<TutorJson> {
     }
   }
   const res = await check(
-    await fetch(`${BASE}/chat/completions`, {
+    await fetch(`${BASE_()}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${a.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -105,10 +107,10 @@ export async function transcribe(apiKey: string, uri: string, lang: Lang): Promi
   } else {
     form.append('file', { uri, name: 'speech.m4a', type: 'audio/m4a' } as any);
   }
-  form.append('model', 'whisper-1');
+  form.append('model', getProvider().sttModel);
   form.append('language', LANGS[lang].whisper);
   const res = await check(
-    await fetch(`${BASE}/audio/transcriptions`, {
+    await fetch(`${BASE_()}/audio/transcriptions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}` },
       body: form,
@@ -120,7 +122,7 @@ export async function transcribe(apiKey: string, uri: string, lang: Lang): Promi
 
 export async function synthesize(apiKey: string, text: string, voice: string, speed = 1): Promise<ArrayBuffer> {
   const res = await check(
-    await fetch(`${BASE}/audio/speech`, {
+    await fetch(`${BASE_()}/audio/speech`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'tts-1', voice, input: text, response_format: 'mp3', speed }),
@@ -130,5 +132,5 @@ export async function synthesize(apiKey: string, text: string, voice: string, sp
 }
 
 export async function validateKey(apiKey: string): Promise<void> {
-  await check(await fetch(`${BASE}/models`, { headers: { Authorization: `Bearer ${apiKey}` } }));
+  await check(await fetch(`${BASE_()}/models`, { headers: { Authorization: `Bearer ${apiKey}` } }));
 }

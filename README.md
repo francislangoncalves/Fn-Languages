@@ -33,6 +33,14 @@ Depois: **Configurações → cole sua OpenAI API Key → Validar e salvar**.
 
 > Gravação e áudio funcionam no Expo Go. Para gerar um app instalável: `npx expo prebuild` + `npx expo run:android|ios`, ou EAS Build.
 
+## 🆓 Chave gratuita (Groq) — padrão
+1. Acesse https://console.groq.com/keys e entre (Google/GitHub/e-mail, sem cartão).
+2. **Create API Key** → copie a chave (`gsk_...`).
+3. No app: **Configurações → Provedor: Groq → cole a chave → Validar e salvar**.
+4. Crie um perfil e comece a trilha.
+
+Groq = Llama 3.3 70B (chat) + Whisper (sua voz); voz do tutor = voz do aparelho/navegador (grátis). O plano gratuito tem limite de uso; se aparecer erro 429, espere um pouco. Para voz realista, troque para **OpenAI (pago)** em Configurações.
+
 ## Perfis, trilha e níveis
 - **Até 5 perfis** locais e independentes: nome, avatar, idioma foco, XP/nível/ofensiva, fases concluídas, vocabulário, histórico e chave OpenAI própria (ou a global, de Configurações).
 - **XP**: ≥5 por mensagem (até 15, conforme `xp_awarded` do tutor: +5 sem erros, +até 5 por riqueza) e bônus ao concluir um cenário (50–150 XP; 15 se repetido).

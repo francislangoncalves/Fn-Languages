@@ -10,6 +10,7 @@ import { FREE_ID, getScenario, isDone } from '../src/curriculum';
 import { confirmAction, notify } from '../src/dialog';
 import { BAND_INFO, bandOf, levelFromXp } from '../src/levels';
 import { askTutor, transcribe } from '../src/openai';
+import { getProvider } from '../src/provider';
 import { buildSystemPrompt, LANGS, PERSONAS } from '../src/personas';
 import { chatKeyFor, useActiveProfile, useStore } from '../src/store';
 import { C } from '../src/theme';
@@ -61,6 +62,7 @@ export default function Chat() {
   const recordingRef = useRef(false);
   const doneRef = useRef(false);
 
+  const modelName = () => (getProvider().id === 'openai' ? settingsRef.current.model : getProvider().chatModel);
   const apiKey = () => useStore.getState().effectiveKey(profileRef.current.id);
 
   const commit = (msgs: ChatMessage[]) => {
@@ -164,7 +166,7 @@ export default function Chat() {
 
   const sendText = useCallback(async (text: string, fromVoice = false) => {
     if (busyRef.current) return;
-    if (!apiKey()) return setError('Sem chave da OpenAI para este perfil. Configure em Configurações ou no perfil.');
+    if (!apiKey()) return setError('Sem chave de API para este perfil. Configure em Configurações ou no perfil.');
     busyRef.current = true;
     setError(null);
     const withUser = [...msgsRef.current, { id: uid(), role: 'user' as const, text, fromVoice, createdAt: Date.now() }];
@@ -172,7 +174,7 @@ export default function Chat() {
     setAvatar('thinking');
     try {
       const r = await askTutor({
-        apiKey: apiKey(), model: settingsRef.current.model, system: systemPrompt(), lang: profileRef.current.lang, free, history: withUser,
+        apiKey: apiKey(), model: modelName(), system: systemPrompt(), lang: profileRef.current.lang, free, history: withUser,
       });
       const reply = await handleReply(r, withUser.filter((m) => m.role === 'user').length, false);
       busyRef.current = false;
@@ -188,13 +190,13 @@ export default function Chat() {
 
   const startConversation = useCallback(async () => {
     if (busyRef.current) return;
-    if (!apiKey()) return setError('Sem chave da OpenAI para este perfil. Configure em Configurações ou no perfil.');
+    if (!apiKey()) return setError('Sem chave de API para este perfil. Configure em Configurações ou no perfil.');
     busyRef.current = true;
     setError(null);
     setAvatar('thinking');
     try {
       const r = await askTutor({
-        apiKey: apiKey(), model: settingsRef.current.model, system: systemPrompt(), lang: profileRef.current.lang, free, history: [], start: true,
+        apiKey: apiKey(), model: modelName(), system: systemPrompt(), lang: profileRef.current.lang, free, history: [], start: true,
       });
       const reply = await handleReply({ ...r, correction_note: null, pronunciation_tip: null, scenario_completed: false }, 0, true);
       busyRef.current = false;
