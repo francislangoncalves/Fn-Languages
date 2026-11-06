@@ -6,7 +6,7 @@ import { ChatMessage } from '../types';
 
 interface Props {
   msg: ChatMessage;
-  onReplay?: (text: string) => void;
+  onReplay?: (text: string, slow?: boolean) => void;
   /** Nível avançado: esconde o texto do tutor até o aluno pedir (treino de escuta) */
   hideText?: boolean;
 }
@@ -15,6 +15,7 @@ export default function MessageBubble({ msg, onReplay, hideText }: Props) {
   const [showTr, setShowTr] = useState(false);
   const [showFix, setShowFix] = useState(false);
   const [showPron, setShowPron] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   const [revealed, setRevealed] = useState(!hideText);
 
   if (msg.role === 'user') {
@@ -49,6 +50,11 @@ export default function MessageBubble({ msg, onReplay, hideText }: Props) {
               <Text style={[styles.botText, { color: C.muted }]}>🎧 Modo escuta — toque para revelar o texto</Text>
             </Pressable>
           )}
+          {revealed && msg.guide ? (
+            <Pressable onPress={() => setShowGuide((v) => !v)}>
+              <Text style={styles.guide}>{showGuide ? `🗣️ ${msg.guide}` : '🗣️ Como ler (toque)'}</Text>
+            </Pressable>
+          ) : null}
           {showTr && <Text style={styles.tr}>{msg.translation || '—'}</Text>}
         </View>
 
@@ -68,6 +74,9 @@ export default function MessageBubble({ msg, onReplay, hideText }: Props) {
             <Ionicons name="volume-high" size={14} color={C.muted} />
             <Text style={styles.chipText}>Ouvir</Text>
           </Pressable>
+          <Pressable onPress={() => onReplay?.(msg.text, true)} style={styles.chip} hitSlop={6}>
+            <Text style={styles.chipText}>🐢 Devagar</Text>
+          </Pressable>
           <Pressable onPress={() => setShowTr((v) => !v)} style={styles.chip} hitSlop={6}>
             <Ionicons name="language" size={14} color={C.muted} />
             <Text style={styles.chipText}>{showTr ? 'Ocultar tradução' : 'Traduzir para Português'}</Text>
@@ -86,6 +95,7 @@ const styles = StyleSheet.create({
   userText: { color: '#fff', fontSize: 16, lineHeight: 22 },
   bot: { backgroundColor: C.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: C.border },
   botText: { color: C.text, fontSize: 16, lineHeight: 22 },
+  guide: { color: C.accent, fontSize: 14, lineHeight: 20, marginTop: 6, fontStyle: 'italic' },
   tr: { color: C.muted, fontSize: 14, lineHeight: 20, marginTop: 8, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, fontStyle: 'italic' },
   actions: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, backgroundColor: C.cardAlt },

@@ -6,6 +6,29 @@ import { getProvider } from './provider';
 
 const BASE_ = () => getProvider().base;
 
+/* ───── Monitor de uso: quem chama recebe tokens + cabeçalhos de limite ───── */
+export interface UsageEvent {
+  kind: 'chat' | 'stt';
+  tokens: number;
+  status: number;
+  headers: Headers;
+}
+let usageSink: ((u: UsageEvent) => void) | null = null;
+export const setUsageSink = (fn: (u: UsageEvent) => void) => {
+  usageSink = fn;
+};
+const report = (res: Response, kind: 'chat' | 'stt', tokens = 0) => {
+  try {
+    usageSink?.({ kind, tokens, status: res.status, headers: res.headers });
+  } catch {}
+};
+
+export function humanWait(sec: number): string {
+  if (sec < 90) return `${Math.ceil(sec)} s`;
+  if (sec < 5400) return `${Math.ceil(sec / 60)} min`;
+  return `${Math.round((sec / 3600) * 10) / 10} h`;
+}
+
 export class OpenAIError extends Error {
   status = 0;
   detail = '';
@@ -20,7 +43,10 @@ async function check(res: Response): Promise<Response> {
   } catch {}
   let msg = `Erro do provedor de IA (${res.status}). ${detail}`;
   if (res.status === 401) msg = 'Chave de API inválida para este provedor. Verifique em Configurações.';
-  if (res.status === 429) msg = 'Limite de uso atingido (429): espere um pouco e tente de novo. ' + detail;
+  if (res.status === 429) {
+    const ra = Number(res.headers.get('retry-after'));
+    msg = `Limite de uso atingido (429). ${ra > 0 ? `Tente de novo em ~${humanWait(ra)}.` : 'Espere um pouco e tente de novo.'} Veja detalhes em Uso.`;
+  }
   const e = new OpenAIError(msg);
   e.status = res.status;
   e.detail = detail;
@@ -78,7 +104,7 @@ function parseTutorJson(raw: string): TutorJson {
     obj = JSON.parse(raw);
   } catch {
     const m = raw.match(/\{[\s\S]*\}/);
-    if (!m) return { reply_target_lang: raw, translation_pt: '', correction_note: null, xp_awarded: 5, pronunciation_tip: null, scenario_completed: false, vocab: [] };
+    if (!m) return { reply_target_lang: raw, translation_pt: '', correction_note: null, xp_awarded: 5, pronunciation_tip: null, scenario_completed: false, vocab: [], pronunciation_guide: null };
     obj = JSON.parse(m[0]);
   }
   const str = (v: any) => (typeof v === 'string' && v.trim() && v.trim().toLowerCase() !== 'null' ? v.trim() : null);
@@ -90,6 +116,7 @@ function parseTutorJson(raw: string): TutorJson {
     xp_awarded: Number.isFinite(xp) ? Math.max(0, Math.min(15, Math.round(xp))) : 5,
     pronunciation_tip: str(obj.pronunciation_tip),
     scenario_completed: obj.scenario_completed === true,
+    pronunciation_guide: str(obj.pronunciation_guide),
     vocab: (Array.isArray(obj.vocab) ? obj.vocab : [])
       .filter((v: any) => v && str(v.term) && str(v.meaning_pt))
       .slice(0, 3)
@@ -165,8 +192,9 @@ export async function askTutor(a: ChatArgs): Promise<TutorJson> {
       res = await call(model, json);
     }
   }
+  const data: any = res.ok ? await res.json() : null;
+  report(res, 'chat', Number(data?.usage?.total_tokens) || 0);
   await check(res);
-  const data = await res.json();
   return parseTutorJson(data.choices?.[0]?.message?.content ?? '');
 }
 
@@ -199,8 +227,9 @@ export async function transcribe(apiKey: string, uri: string, lang: Lang): Promi
       res = await send(model);
     }
   }
+  const data: any = res.ok ? await res.json() : null;
+  report(res, 'stt');
   await check(res);
-  const data = await res.json();
   return String(data.text ?? '').trim();
 }
 

@@ -5,7 +5,7 @@ import { confirmAction, notify } from '../src/dialog';
 import { LANGS } from '../src/personas';
 import { useStore } from '../src/store';
 import { C } from '../src/theme';
-import { Lang } from '../src/types';
+import { Field, Lang } from '../src/types';
 
 const AVATARS = ['🦊', '🐼', '🦉', '🐯', '🐸', '🦁', '🐙', '🦄', '🚀', '🎧', '💻', '🌟', '🍕', '⚽', '🎸', '🌍'];
 
@@ -18,6 +18,7 @@ export default function ProfileEdit() {
   const [name, setName] = useState(existing?.name ?? '');
   const [avatar, setAvatar] = useState(existing?.avatar ?? AVATARS[0]);
   const [lang, setLang] = useState<Lang>(existing?.lang ?? 'en');
+  const [field, setField] = useState<Field>(existing?.field ?? 'tech');
   const [useOwn, setUseOwn] = useState(existing?.useOwnKey ?? false);
   const [key, setKey] = useState(existing ? ownKeys[existing.id] ?? '' : '');
   const [unlockAll, setUnlockAll] = useState(existing?.unlockAll ?? false);
@@ -25,11 +26,11 @@ export default function ProfileEdit() {
   async function save() {
     if (!name.trim()) return notify('Dê um nome ao perfil');
     if (existing) {
-      updateProfile(existing.id, { name: name.trim(), avatar, lang, useOwnKey: useOwn, unlockAll });
+      updateProfile(existing.id, { name: name.trim(), avatar, lang, field, useOwnKey: useOwn, unlockAll });
       await setOwnKey(existing.id, key);
       router.back();
     } else {
-      const nid = await createProfile({ name, avatar, lang, useOwnKey: useOwn, unlockAll }, key);
+      const nid = await createProfile({ name, avatar, lang, field, useOwnKey: useOwn, unlockAll }, key);
       if (!nid) return notify('Limite de 5 perfis atingido');
       router.replace('/');
     }
@@ -59,6 +60,16 @@ export default function ProfileEdit() {
           </Pressable>
         ))}
       </View>
+
+      <Text style={s.label}>EM QUAL ÁREA VOCÊ TRABALHA?</Text>
+      <View style={s.seg}>
+        {([['tech', '💻 Tecnologia (TI)'], ['pedagogy', '📚 Pedagogia']] as [Field, string][]).map(([f, l]) => (
+          <Pressable key={f} onPress={() => setField(f)} style={[s.segBtn, field === f && s.segOn]}>
+            <Text style={[s.segText, field === f && { color: '#fff' }]}>{l}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={s.hint}>Personaliza a Fase 3 (entrevistas, rotina de trabalho) e os exemplos do tutor para a sua área.</Text>
 
       <Text style={s.label}>CHAVE DE API</Text>
       <View style={s.toggle}>

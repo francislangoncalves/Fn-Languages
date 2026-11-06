@@ -217,3 +217,10 @@ export async function cancelRecording() {
   }
   await setPlaybackMode().catch(() => {});
 }
+
+/** Fala local (grátis, sem chave): usada nas lições de pronúncia. */
+export async function speakLocal(text: string, lang: Lang, rate = 0.9): Promise<void> {
+  await stopSpeaking();
+  await setPlaybackMode().catch(() => {});
+  await speakDevice(text, lang, rate / 0.92);
+}

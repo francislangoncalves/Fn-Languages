@@ -4,14 +4,16 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { dayKey, levelFromXp, nextStreak } from './levels';
 import { scenarioKey } from './curriculum';
-import { resetModelCache } from './openai';
+import { resetModelCache, setUsageSink } from './openai';
+import { RateLimit, readRateHeaders } from './usage';
 import { ProviderId, PROVIDERS, setProvider } from './provider';
-import { ChatMessage, Lang, Profile, VocabItem } from './types';
+import { ChatMessage, Field, Lang, Profile, VocabItem } from './types';
 
 export const MAX_PROFILES = 5;
 const KEY_NAME: Record<ProviderId, string> = { openai: 'openai_api_key', groq: 'groq_api_key' };
 const KEY_SETTINGS = 'settings_v1';
 const KEY_PROFILES = 'profiles_v2';
+const KEY_RATE = 'ratelimit_v1';
 const ownKeyName = (id: string) => `profile_key_${id}`;
 
 // Na web não há cofre seguro: a chave fica no localStorage do navegador do próprio usuário.
@@ -48,6 +50,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 export interface NewProfile {
   name: string;
+  field: Field;
   avatar: string;
   lang: Lang;
   useOwnKey: boolean;
@@ -69,6 +72,7 @@ interface State {
   profiles: Profile[];
   activeId: string | null;
   settings: Settings;
+  rateLimit: Partial<Record<ProviderId, RateLimit>>;
 
   load: () => Promise<void>;
   setGlobalKey: (k: string) => Promise<void>;
@@ -88,6 +92,7 @@ interface State {
   completeScenario: (id: string, lang: Lang, scenarioId: string, xp: number) => XpResult;
   addVocab: (id: string, items: { term: string; meaning: string; lang: Lang; scenarioId?: string }[]) => void;
   toggleLearned: (id: string, term: string, lang: Lang) => void;
+  recordUsage: (kind: 'chat' | 'stt', tokens: number, headers: Headers, status: number) => void;
 }
 
 export const useStore = create<State>((set, get) => {
@@ -108,6 +113,7 @@ export const useStore = create<State>((set, get) => {
     profiles: [],
     activeId: null,
     settings: DEFAULTS,
+    rateLimit: {},
 
     load: async () => {
       const allKeys: Record<ProviderId, string> = { groq: '', openai: '' };
@@ -119,6 +125,7 @@ export const useStore = create<State>((set, get) => {
       let settings = DEFAULTS;
       let profiles: Profile[] = [];
       let activeId: string | null = null;
+      let rateLimit: Partial<Record<ProviderId, RateLimit>> = {};
       try {
         const s = await AsyncStorage.getItem(KEY_SETTINGS);
         if (s) settings = { ...DEFAULTS, ...JSON.parse(s) };
@@ -128,7 +135,11 @@ export const useStore = create<State>((set, get) => {
           profiles = j.profiles ?? [];
           activeId = j.activeId ?? null;
         }
+        const rl = await AsyncStorage.getItem(KEY_RATE);
+        if (rl) rateLimit = JSON.parse(rl);
       } catch {}
+      // migração: perfis antigos ganham área (TI) e contadores de uso
+      profiles = profiles.map((p) => ({ ...p, field: p.field ?? 'tech', usage: p.usage ?? {} }));
       const ownKeys: Record<string, string> = {};
       for (const p of profiles) {
         try {
@@ -138,7 +149,7 @@ export const useStore = create<State>((set, get) => {
       }
       if (!profiles.find((p) => p.id === activeId)) activeId = profiles[0]?.id ?? null;
       setProvider(settings.provider);
-      set({ allKeys, globalKey: allKeys[settings.provider], ownKeys, settings, profiles, activeId, ready: true });
+      set({ allKeys, globalKey: allKeys[settings.provider], ownKeys, settings, profiles, activeId, rateLimit, ready: true });
     },
 
     setGlobalKey: async (k) => {
@@ -168,7 +179,7 @@ export const useStore = create<State>((set, get) => {
     createProfile: async (np, ownKey) => {
       if (get().profiles.length >= MAX_PROFILES) return null;
       const profile: Profile = {
-        id: uid(), name: np.name.trim(), avatar: np.avatar, lang: np.lang,
+        id: uid(), name: np.name.trim(), avatar: np.avatar, lang: np.lang, field: np.field, usage: {},
         xp: 0, streak: 0, bestStreak: 0, lastPractice: null,
         useOwnKey: np.useOwnKey, unlockAll: np.unlockAll,
         completed: {}, vocab: [], chats: {}, createdAt: Date.now(),
@@ -254,6 +265,27 @@ export const useStore = create<State>((set, get) => {
         return { ...p, vocab: vocab.slice(0, 500) };
       }),
 
+    recordUsage: (kind, tokens, headers, status) => {
+      const { activeId, settings } = get();
+      if (activeId && status >= 200 && status < 300) {
+        const day = dayKey();
+        patch(activeId, (p) => {
+          const cur = p.usage?.[day] ?? { req: 0, stt: 0, tok: 0 };
+          const usage = {
+            ...(p.usage ?? {}),
+            [day]: { req: cur.req + (kind === 'chat' ? 1 : 0), stt: cur.stt + (kind === 'stt' ? 1 : 0), tok: cur.tok + tokens },
+          };
+          // mantém só os últimos 30 dias
+          Object.keys(usage).sort().slice(0, -30).forEach((k) => delete usage[k]);
+          return { ...p, usage };
+        });
+      }
+      const prov = settings.provider;
+      const rateLimit = { ...get().rateLimit, [prov]: readRateHeaders(headers, status, get().rateLimit[prov]) };
+      set({ rateLimit });
+      AsyncStorage.setItem(KEY_RATE, JSON.stringify(rateLimit)).catch(() => {});
+    },
+
     toggleLearned: (id, term, lang) =>
       patch(id, (p) => ({
         ...p,
@@ -261,5 +293,7 @@ export const useStore = create<State>((set, get) => {
       })),
   };
 });
+
+setUsageSink((u) => useStore.getState().recordUsage(u.kind, u.tokens, u.headers, u.status));
 
 export const useActiveProfile = () => useStore((s) => s.profiles.find((p) => p.id === s.activeId));

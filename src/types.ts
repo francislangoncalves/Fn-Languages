@@ -1,5 +1,6 @@
 export type Lang = 'en' | 'pl';
 export type PersonaId = 'friend' | 'recruiter' | 'immigration';
+export type Field = 'tech' | 'pedagogy';
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
 export interface VocabItem {
@@ -20,6 +21,8 @@ export interface TutorJson {
   scenario_completed: boolean;
   /** Extensão: até 3 palavras/expressões novas da resposta, p/ o caderno de vocabulário */
   vocab: { term: string; meaning_pt: string }[];
+  /** Como ler a resposta, aproximado com sons do português (só nível iniciante) */
+  pronunciation_guide: string | null;
 }
 
 export interface ChatMessage {
@@ -30,9 +33,16 @@ export interface ChatMessage {
   translation?: string;
   correction?: string | null;
   pronunciation?: string | null;
+  guide?: string | null;
   xp?: number; // XP ganho pela mensagem do usuário (exibido no balão do tutor)
   fromVoice?: boolean;
   createdAt: number;
+}
+
+export interface UsageDay {
+  req: number; // mensagens ao tutor
+  stt: number; // transcrições de voz
+  tok: number; // tokens (chat)
 }
 
 export interface Profile {
@@ -40,6 +50,7 @@ export interface Profile {
   name: string;
   avatar: string;
   lang: Lang;
+  field: Field; // área de trabalho: personaliza a Fase 3
   xp: number;
   streak: number;
   bestStreak: number;
@@ -51,5 +62,6 @@ export interface Profile {
   vocab: VocabItem[];
   /** "<lang>:<scenarioId>[:persona]" -> mensagens */
   chats: Record<string, ChatMessage[]>;
+  usage: Record<string, UsageDay>; // YYYY-MM-DD
   createdAt: number;
 }

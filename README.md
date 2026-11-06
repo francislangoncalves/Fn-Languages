@@ -41,6 +41,12 @@ Depois: **Configurações → cole sua OpenAI API Key → Validar e salvar**.
 
 Groq = Llama 3.3 70B (chat) + Whisper (sua voz); voz do tutor = voz do aparelho/navegador (grátis). O plano gratuito tem limite de uso; se aparecer erro 429, espere um pouco. Para voz realista, troque para **OpenAI (pago)** em Configurações.
 
+## Novidades
+- **Uso e limites** (tela "Uso"): cota da chave lida dos cabeçalhos `x-ratelimit-*` (requisições/dia e tokens/min, com contagem regressiva do reset), contagem local por perfil e aviso quando bater o limite (429).
+- **Área profissional** (Tecnologia ou Pedagogia) por perfil: adapta a Fase 3 e os exemplos do tutor.
+- **Fase extra · Comunidade & Igreja Católica** (Missa, paróquia, Natal/Advento), liberada desde o início.
+- **Fase 0 · Introdução & Pronúncia**: lições com áudio devagar/normal, "como ler" em sons do português, comparações e quiz. O tutor também mostra "como ler" nas respostas dos níveis iniciais.
+
 ## Perfis, trilha e níveis
 - **Até 5 perfis** locais e independentes: nome, avatar, idioma foco, XP/nível/ofensiva, fases concluídas, vocabulário, histórico e chave OpenAI própria (ou a global, de Configurações).
 - **XP**: ≥5 por mensagem (até 15, conforme `xp_awarded` do tutor: +5 sem erros, +até 5 por riqueza) e bônus ao concluir um cenário (50–150 XP; 15 se repetido).

@@ -1,4 +1,4 @@
-import { Lang, Profile } from './types';
+import { Field, Lang, Profile } from './types';
 
 export const FREE_ID = 'free';
 
@@ -14,6 +14,8 @@ export interface Scenario {
   /** Particularidades da Polônia quando o idioma é polonês */
   plNote: string;
   xpReward: number;
+  /** Versão do cenário para quem trabalha com Pedagogia (a padrão é TI) */
+  pedagogy?: Partial<Pick<Scenario, 'title' | 'emoji' | 'desc' | 'objectives' | 'brief' | 'plNote'>>;
 }
 
 export interface Phase {
@@ -22,6 +24,10 @@ export interface Phase {
   emoji: string;
   subtitle: string;
   scenarios: Scenario[];
+  /** Trilha opcional: não bloqueia a principal e começa liberada */
+  optional?: boolean;
+  /** Variações de título para Pedagogia */
+  pedagogy?: { title: string; subtitle: string };
 }
 
 export const PHASES: Phase[] = [
@@ -95,9 +101,17 @@ export const PHASES: Phase[] = [
     title: 'Fase 3 · Mercado de Trabalho & Suporte de TI',
     emoji: '💼',
     subtitle: 'Entrevistas, chamados e reuniões',
+    pedagogy: { title: 'Fase 3 · Mercado de Trabalho & Educação', subtitle: 'Entrevistas, sala de aula, pais e reuniões pedagógicas' },
     scenarios: [
       {
         id: 'p3-hr', title: 'Entrevista inicial com RH', emoji: '🤝', xpReward: 100,
+        pedagogy: {
+          title: 'Entrevista inicial na escola / coordenação', emoji: '🏫',
+          desc: 'Fale de você, formação e experiência com alunos.',
+          objectives: ['Apresentar sua formação e experiência com crianças/jovens', 'Explicar sua filosofia de ensino', 'Responder uma pergunta comportamental (ex.: aluno difícil)', 'Falar de disponibilidade, horários e expectativa salarial'],
+          brief: 'You are a school coordinator / HR representative running a first-round job interview for a teacher / pedagogue / teaching-assistant role (kindergarten, school or language school). Ask about education and qualifications, experience with children, teaching philosophy, motivation, strengths/weaknesses, a behavioural (STAR) question about a difficult classroom situation, schedule, salary expectations and work permit.',
+          plNote: 'Poland: szkoła, przedszkole, dyrektor/koordynator, nauczyciel, pedagog, wykształcenie, staż pracy, umowa o pracę, wymiar godzin.',
+        },
         desc: 'Fale de você, experiência e pretensão.',
         objectives: ['Fazer um pitch pessoal', 'Falar da experiência profissional', 'Responder uma pergunta comportamental', 'Falar de expectativa salarial e disponibilidade'],
         brief: 'You are an HR recruiter running a first-round job interview for an IT support / infrastructure role. Ask about background, motivation, strengths/weaknesses, behavioural (STAR) questions, salary expectations, notice period, relocation/visa.',
@@ -105,6 +119,13 @@ export const PHASES: Phase[] = [
       },
       {
         id: 'p3-tech', title: 'Entrevista técnica (Infra/Redes/N2-N3)', emoji: '🖥️', xpReward: 120,
+        pedagogy: {
+          title: 'Entrevista pedagógica (didática e sala de aula)', emoji: '📚',
+          desc: 'Planejamento de aula, gestão de turma e avaliação.',
+          objectives: ['Explicar como planeja uma aula', 'Descrever como lida com uma turma agitada ou alunos com necessidades diferentes', 'Explicar como avalia a aprendizagem', 'Dar um exemplo de atividade que você aplicaria'],
+          brief: 'You are a head teacher running a pedagogical interview for a teaching role. Ask about lesson planning, classroom management, differentiation and inclusion (students with special educational needs), assessment and feedback, communication with parents, use of digital tools, and ask the learner to describe a sample activity.',
+          plNote: 'Poland: plan lekcji, scenariusz zajęć, zarządzanie klasą, uczniowie ze specjalnymi potrzebami edukacyjnymi, ocena opisowa, dziennik elektroniczny, podstawa programowa.',
+        },
         desc: 'Perguntas de infraestrutura, redes e suporte.',
         objectives: ['Explicar um conceito técnico (DNS/DHCP/VLAN/AD etc.)', 'Descrever como diagnosticaria um problema de rede', 'Descrever um incidente N2/N3 que resolveu', 'Fazer uma pergunta ao entrevistador'],
         brief: 'You are a senior infrastructure engineer running a technical interview for a Support L2/L3 / sysadmin role. Ask about networking (DNS, DHCP, VLAN, routing, VPN), Active Directory/Windows/Linux administration, monitoring, backups, troubleshooting methodology and a real incident story.',
@@ -112,6 +133,13 @@ export const PHASES: Phase[] = [
       },
       {
         id: 'p3-itsm', title: 'Chamados ITSM e usuários', emoji: '🎫', xpReward: 120,
+        pedagogy: {
+          title: 'Reunião com pais e atendimento a alunos', emoji: '👨‍👩‍👧',
+          desc: 'Converse com pais sobre desempenho e comportamento.',
+          objectives: ['Ouvir e acolher a preocupação dos pais', 'Explicar a situação do aluno de forma clara e gentil', 'Propor um plano de ação com prazos', 'Fechar a conversa combinando o acompanhamento'],
+          brief: 'You are a worried parent (or a student) meeting the learner, who plays the teacher. You are concerned about your child\'s grades or behaviour. The learner must listen, empathise, explain, propose a plan and agree on follow-up.',
+          plNote: 'Poland: wywiadówka, rozmowa z rodzicem, oceny, zachowanie, plan wsparcia, pedagog szkolny, dziennik.',
+        },
         desc: 'Atenda tickets e fale com equipes internacionais.',
         objectives: ['Coletar informações do usuário (sintoma, impacto, urgência)', 'Explicar o diagnóstico/solução de forma clara', 'Definir prioridade/SLA ou escalar o chamado', 'Fechar o ticket confirmando com o usuário'],
         brief: 'You are a non-technical employee (or a colleague on an international team) who calls the IT service desk with a problem (VPN down, locked account, slow laptop, printer, shared drive). The learner plays the support analyst handling the ITSM ticket: triage, questions, priority, workaround, escalation, closing.',
@@ -119,6 +147,13 @@ export const PHASES: Phase[] = [
       },
       {
         id: 'p3-daily', title: 'Daily Scrum e prioridades de TI', emoji: '📅', xpReward: 130,
+        pedagogy: {
+          title: 'Reunião pedagógica: planejamento e prioridades', emoji: '🗓️',
+          desc: 'Atualize a equipe e negocie prioridades escolares.',
+          objectives: ['Dar o status das turmas/projetos', 'Reportar um impedimento (material, horário, sala)', 'Negociar a prioridade entre dois compromissos', 'Concordar em próximos passos e prazos'],
+          brief: 'You are the pedagogical coordinator in a weekly team meeting of teachers. Ask for status, obstacles, then raise two conflicting priorities (e.g. a school event vs. exam preparation) so the learner must negotiate priorities and deadlines.',
+          plNote: 'Poland: rada pedagogiczna, zebranie zespołu, plan pracy, sprawdzian, uroczystość szkolna, termin, priorytet.',
+        },
         desc: 'Atualize o time e negocie prioridades.',
         objectives: ['Dar o status (ontem/hoje/bloqueios)', 'Reportar um impedimento', 'Negociar a prioridade de duas demandas', 'Concordar em próximos passos e prazos'],
         brief: 'You are the team lead (or product owner) in a daily stand-up with an international IT team. Ask for status, blockers, and then push back with a conflicting urgent request so the learner must negotiate priorities and deadlines.',
@@ -148,6 +183,36 @@ export const PHASES: Phase[] = [
       },
     ],
   },
+  {
+    id: 5,
+    title: 'Fase Extra · Comunidade & Igreja Católica',
+    emoji: '⛪',
+    subtitle: 'Missa, paróquia, Natal e festas — liberada desde o início',
+    optional: true,
+    scenarios: [
+      {
+        id: 'p5-mass', title: 'Indo à Missa', emoji: '⛪', xpReward: 80,
+        desc: 'Horários, cumprimentos e participação.',
+        objectives: ['Perguntar o horário da Missa e se há Missa em português/inglês', 'Cumprimentar com educação ao chegar', 'Entender avisos simples e as respostas da liturgia', 'Se despedir com uma saudação cristã'],
+        brief: 'You are a friendly parishioner (and later the sacristan) welcoming a Catholic newcomer to the parish. Talk about Mass times, which Mass to attend, where to sit, the main responses and greetings of the liturgy, the offertory/collection, Communion and parish announcements. Be warm and respectful.',
+        plNote: 'Poland: msza święta, parafia, kościół, ksiądz proboszcz, ministrant, kolekta, ogłoszenia parafialne, "Szczęść Boże!", "Pan z wami" – "I z duchem twoim", "Niech będzie pochwalony Jezus Chrystus".',
+      },
+      {
+        id: 'p5-parish', title: 'Paróquia, sacramentos e voluntariado', emoji: '🕊️', xpReward: 90,
+        desc: 'Secretaria paroquial, confissão e grupos.',
+        objectives: ['Perguntar sobre confissão e horários de atendimento', 'Informar-se sobre sacramentos (batismo, casamento, crisma)', 'Perguntar sobre grupos da paróquia ou voluntariado', 'Combinar um próximo contato'],
+        brief: 'You are a parish office secretary / volunteer helping a Catholic newcomer: office hours, confession times, preparing sacraments (baptism, marriage preparation, confirmation), parish groups, choir, Caritas volunteering and how to register as a parishioner.',
+        plNote: 'Poland: kancelaria parafialna, spowiedź, sakramenty, chrzest, bierzmowanie, nauki przedmałżeńskie, Caritas, schola, wspólnota, wizyta duszpasterska (kolęda).',
+      },
+      {
+        id: 'p5-christmas', title: 'Natal, Advento e festas católicas', emoji: '🎄', xpReward: 100,
+        desc: 'Tradições de Natal, Páscoa e família.',
+        objectives: ['Falar de como você celebra o Natal', 'Perguntar sobre as tradições locais (Advento, ceia, Missa do Galo)', 'Desejar boas festas e abençoar', 'Comparar uma tradição do Brasil com a local'],
+        brief: 'You are a warm Catholic friend chatting about Advent, Christmas Eve dinner, Midnight Mass, Christmas traditions, Easter, family customs, and comparing them with Brazilian traditions. Include festive greetings and blessings.',
+        plNote: 'Poland: Adwent, roraty, Wigilia, opłatek (dzielenie się opłatkiem), 12 potraw, wolne miejsce przy stole, Pasterka, Boże Narodzenie, Wielkanoc, święconka. Wishes: "Wesołych Świąt!", "Błogosławionych Świąt".',
+      },
+    ],
+  },
 ];
 
 export const FREE_SCENARIO: Scenario = {
@@ -156,19 +221,41 @@ export const FREE_SCENARIO: Scenario = {
   objectives: [], brief: '', plNote: '',
 };
 
-const TRAIL: Scenario[] = PHASES.flatMap((p) => p.scenarios);
+export const MAIN_PHASES = PHASES.filter((p) => !p.optional);
+export const EXTRA_PHASES = PHASES.filter((p) => p.optional);
+const TRAIL: Scenario[] = MAIN_PHASES.flatMap((p) => p.scenarios);
+const EXTRA: Scenario[] = EXTRA_PHASES.flatMap((p) => p.scenarios);
 
 export const scenarioKey = (lang: Lang, id: string) => `${lang}:${id}`;
 export const isDone = (p: Profile, id: string) => (p.completed[scenarioKey(p.lang, id)] ?? 0) > 0;
 
-export function getScenario(id: string): Scenario | undefined {
-  return id === FREE_ID ? FREE_SCENARIO : TRAIL.find((s) => s.id === id);
+/** Aplica a variante da área profissional (Tecnologia é o padrão). */
+export function scenarioFor(sc: Scenario, field: Field | undefined): Scenario {
+  return field === 'pedagogy' && sc.pedagogy ? { ...sc, ...sc.pedagogy } : sc;
+}
+
+export function phaseFor(ph: Phase, field: Field | undefined): Phase {
+  const f = field === 'pedagogy';
+  return {
+    ...ph,
+    title: f && ph.pedagogy ? ph.pedagogy.title : ph.title,
+    subtitle: f && ph.pedagogy ? ph.pedagogy.subtitle : ph.subtitle,
+    scenarios: ph.scenarios.map((sc) => scenarioFor(sc, field)),
+  };
+}
+
+export function getScenario(id: string, field?: Field): Scenario | undefined {
+  if (id === FREE_ID) return FREE_SCENARIO;
+  const sc = [...TRAIL, ...EXTRA].find((x) => x.id === id);
+  return sc ? scenarioFor(sc, field) : undefined;
 }
 
 export function isUnlocked(p: Profile, id: string): boolean {
   if (p.unlockAll) return true;
+  const e = EXTRA.findIndex((s) => s.id === id);
+  if (e >= 0) return e === 0 || isDone(p, EXTRA[e - 1].id); // trilha extra: começa liberada
   // Chat livre abre junto com a Fase 4
-  const target = id === FREE_ID ? PHASES[3].scenarios[0].id : id;
+  const target = id === FREE_ID ? MAIN_PHASES[3].scenarios[0].id : id;
   const i = TRAIL.findIndex((s) => s.id === target);
   if (i <= 0) return i === 0;
   return isDone(p, TRAIL[i - 1].id);
@@ -179,4 +266,5 @@ export function phaseProgress(p: Profile, phase: Phase) {
   return { done, total: phase.scenarios.length };
 }
 
+/** Próximo cenário da trilha principal */
 export const nextScenario = (p: Profile) => TRAIL.find((s) => !isDone(p, s.id));

@@ -35,6 +35,8 @@ export default function RootLayout() {
         <Stack.Screen name="profiles" options={{ title: 'Perfis' }} />
         <Stack.Screen name="profile-edit" options={{ title: 'Perfil' }} />
         <Stack.Screen name="vocab" options={{ title: 'Vocabulário' }} />
+        <Stack.Screen name="usage" options={{ title: 'Uso e limites' }} />
+        <Stack.Screen name="lesson" options={{ title: 'Lição' }} />
       </Stack>
     </>
   );

@@ -11,7 +11,7 @@ import { confirmAction, notify } from '../src/dialog';
 import { BAND_INFO, bandOf, levelFromXp } from '../src/levels';
 import { askTutor, transcribe } from '../src/openai';
 import { getProvider } from '../src/provider';
-import { buildSystemPrompt, LANGS, PERSONAS } from '../src/personas';
+import { buildSystemPrompt, LANGS, PERSONAS, personaName } from '../src/personas';
 import { chatKeyFor, useActiveProfile, useStore } from '../src/store';
 import { C } from '../src/theme';
 import { AvatarState, ChatMessage, PersonaId } from '../src/types';
@@ -23,10 +23,10 @@ export default function Chat() {
   const params = useLocalSearchParams<{ scenario?: string; persona?: string }>();
   const scenarioId = params.scenario ?? FREE_ID;
   const personaId = (params.persona as PersonaId) ?? 'friend';
-  const scenario = getScenario(scenarioId)!;
   const free = scenarioId === FREE_ID;
 
   const profile = useActiveProfile()!;
+  const scenario = getScenario(scenarioId, profile.field)!;
   const { settings, setChat, clearChat, awardXp, completeScenario, addVocab } = useStore();
   const key = chatKeyFor(profile.lang, scenarioId, personaId);
   const messages = profile.chats[key] ?? [];
@@ -81,12 +81,13 @@ export default function Chat() {
       level: levelFromXp(profileRef.current.xp),
       scenario: free ? undefined : scenario,
       persona: personaId,
+      field: profileRef.current.field,
     });
 
-  const say = useCallback(async (text: string) => {
+  const say = useCallback(async (text: string, slow = false) => {
     setAvatar('speaking');
     try {
-      await speak(text, profileRef.current.lang, settingsRef.current, apiKey(), speedRef.current);
+      await speak(text, profileRef.current.lang, settingsRef.current, apiKey(), slow ? Math.min(speedRef.current, 0.7) : speedRef.current);
     } catch {}
     setAvatar('idle');
   }, []);
@@ -150,7 +151,7 @@ export default function Chat() {
     const msgs = [...msgsRef.current];
     const botMsg: ChatMessage = {
       id: uid(), role: 'assistant', text: r.reply_target_lang, translation: r.translation_pt,
-      correction: r.correction_note, pronunciation: r.pronunciation_tip, xp: gained || undefined, createdAt: Date.now(),
+      correction: r.correction_note, pronunciation: r.pronunciation_tip, guide: r.pronunciation_guide, xp: gained || undefined, createdAt: Date.now(),
     };
     commit([...msgs, botMsg]);
 
@@ -252,7 +253,7 @@ export default function Chat() {
       setTimeout(startConversation, 50);
     });
 
-  const title = free ? `${persona.emoji} ${persona.names[profile.lang].split(' (')[0]}` : `${scenario.emoji} ${scenario.title}`;
+  const title = free ? `${persona.emoji} ${personaName(personaId, profile.lang, profile.field).split(' (')[0]}` : `${scenario.emoji} ${scenario.title}`;
 
   return (
     <SafeAreaView style={s.safe} edges={['bottom']}>

@@ -3,9 +3,10 @@ import { Redirect, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ProfileCard from '../src/components/ProfileCard';
-import { FREE_ID, isDone, isUnlocked, nextScenario, PHASES, phaseProgress, Scenario } from '../src/curriculum';
+import { EXTRA_PHASES, FREE_ID, isDone, isUnlocked, MAIN_PHASES, nextScenario, Phase, phaseFor, phaseProgress, scenarioFor, scenarioKey, Scenario } from '../src/curriculum';
+import { lessonsFor } from '../src/lessons';
 import { notify } from '../src/dialog';
-import { LANGS, PERSONAS } from '../src/personas';
+import { LANGS, PERSONAS, personaName } from '../src/personas';
 import { useActiveProfile, useStore } from '../src/store';
 import { C } from '../src/theme';
 import { Lang, PersonaId } from '../src/types';
@@ -15,6 +16,7 @@ export default function Home() {
   const profile = useActiveProfile();
   const { updateProfile, effectiveKey } = useStore();
   const hasKey = useStore((s) => !!s.effectiveKey(s.activeId));
+  const blocked = useStore((st) => !!(st.rateLimit[st.settings.provider]?.blockedUntil && st.rateLimit[st.settings.provider]!.blockedUntil! > Date.now()));
   void effectiveKey;
 
   if (!profile) return <Redirect href="/profile-edit?first=1" />;
@@ -26,7 +28,56 @@ export default function Home() {
     router.push({ pathname: '/chat', params: { scenario: sc.id, persona: persona ?? 'friend' } });
   };
 
-  const next = nextScenario(profile);
+  const nextRaw = nextScenario(profile);
+  const next = nextRaw ? scenarioFor(nextRaw, profile.field) : undefined;
+  const lessons = lessonsFor(profile.lang);
+  const lessonsDone = lessons.filter((l) => (profile.completed[scenarioKey(profile.lang, l.id)] ?? 0) > 0).length;
+
+  const renderPhase = (ph: Phase) => {
+    const prog = phaseProgress(profile, ph);
+    return (
+      <View key={ph.id}>
+        <View style={s.phaseHead}>
+          <Text style={s.phaseTitle}>{ph.emoji} {ph.title}</Text>
+          <Text style={s.phaseCount}>{prog.done}/{prog.total}</Text>
+        </View>
+        <Text style={s.phaseSub}>{ph.subtitle}</Text>
+        {ph.scenarios.map((sc) => {
+          const unlocked = isUnlocked(profile, sc.id);
+          const done = isDone(profile, sc.id);
+          return (
+            <Pressable key={sc.id} onPress={() => open(sc)} style={[s.card, !unlocked && { opacity: 0.5 }]}>
+              <Text style={{ fontSize: 28 }}>{sc.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{sc.title}</Text>
+                <Text style={s.cardSub}>{sc.desc} · +{sc.xpReward} XP</Text>
+              </View>
+              <Ionicons name={done ? 'checkmark-circle' : unlocked ? 'chevron-forward' : 'lock-closed'} size={22} color={done ? C.accent : C.muted} />
+            </Pressable>
+          );
+        })}
+        {ph.id === 4 && (
+          <View style={[s.card, { flexDirection: 'column', alignItems: 'stretch', opacity: isUnlocked(profile, FREE_ID) ? 1 : 0.5 }]}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 28 }}>💬</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Modo Chat Livre</Text>
+                <Text style={s.cardSub}>Prática aberta, sem roteiro. Escolha o tutor:</Text>
+              </View>
+              {!isUnlocked(profile, FREE_ID) && <Ionicons name="lock-closed" size={20} color={C.muted} />}
+            </View>
+            <View style={[s.row, { marginTop: 10, flexWrap: 'wrap' }]}>
+              {(Object.keys(PERSONAS) as PersonaId[]).map((id) => (
+                <Pressable key={id} style={s.chip} onPress={() => open({ id: FREE_ID } as Scenario, id)}>
+                  <Text style={s.chipText}>{PERSONAS[id].emoji} {personaName(id, profile.lang, profile.field).split(' (')[0]}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={s.container}>
@@ -38,11 +89,15 @@ export default function Home() {
       <View style={s.tools}>
         <Pressable style={s.tool} onPress={() => router.push('/vocab')}>
           <Ionicons name="book" size={18} color={C.text} />
-          <Text style={s.toolText}>Vocabulário ({profile.vocab.filter((v) => v.lang === profile.lang).length})</Text>
+          <Text style={s.toolText}>Vocab. ({profile.vocab.filter((v) => v.lang === profile.lang).length})</Text>
+        </Pressable>
+        <Pressable style={s.tool} onPress={() => router.push('/usage')}>
+          <Ionicons name={blocked ? 'warning' : 'speedometer'} size={18} color={blocked ? C.danger : C.text} />
+          <Text style={[s.toolText, blocked && { color: C.danger }]}>{blocked ? 'Limite!' : 'Uso'}</Text>
         </Pressable>
         <Pressable style={s.tool} onPress={() => router.push('/settings')}>
           <Ionicons name="settings-sharp" size={18} color={C.text} />
-          <Text style={s.toolText}>Configurações</Text>
+          <Text style={s.toolText}>Ajustes</Text>
         </Pressable>
       </View>
 
@@ -76,55 +131,30 @@ export default function Home() {
         </Pressable>
       )}
 
-      {PHASES.map((ph) => {
-        const prog = phaseProgress(profile, ph);
+      {/* Fase 0: introdução e pronúncia */}
+      <View style={s.phaseHead}>
+        <Text style={s.phaseTitle}>🌱 Fase 0 · Introdução & Pronúncia</Text>
+        <Text style={s.phaseCount}>{lessonsDone}/{lessons.length}</Text>
+      </View>
+      <Text style={s.phaseSub}>
+        {profile.lang === 'pl' ? 'Comece por aqui: os sons do polonês comparados ao português, com áudio.' : 'Comece por aqui: sons difíceis, cumprimentos e falsos amigos.'}
+      </Text>
+      {lessons.map((l) => {
+        const done = (profile.completed[scenarioKey(profile.lang, l.id)] ?? 0) > 0;
         return (
-          <View key={ph.id}>
-            <View style={s.phaseHead}>
-              <Text style={s.phaseTitle}>{ph.emoji} {ph.title}</Text>
-              <Text style={s.phaseCount}>{prog.done}/{prog.total}</Text>
+          <Pressable key={l.id} onPress={() => router.push({ pathname: '/lesson', params: { id: l.id } })} style={s.card}>
+            <Text style={{ fontSize: 28 }}>{l.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.cardTitle}>{l.title}</Text>
+              <Text style={s.cardSub}>Ouça, compare com o português e pratique · +{l.xp} XP</Text>
             </View>
-            <Text style={s.phaseSub}>{ph.subtitle}</Text>
-            {ph.scenarios.map((sc) => {
-              const unlocked = isUnlocked(profile, sc.id);
-              const done = isDone(profile, sc.id);
-              return (
-                <Pressable key={sc.id} onPress={() => open(sc)} style={[s.card, !unlocked && { opacity: 0.5 }]}>
-                  <Text style={{ fontSize: 28 }}>{sc.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.cardTitle}>{sc.title}</Text>
-                    <Text style={s.cardSub}>{sc.desc} · +{sc.xpReward} XP</Text>
-                  </View>
-                  <Ionicons
-                    name={done ? 'checkmark-circle' : unlocked ? 'chevron-forward' : 'lock-closed'}
-                    size={22}
-                    color={done ? C.accent : C.muted}
-                  />
-                </Pressable>
-              );
-            })}
-            {ph.id === 4 && (
-              <View style={[s.card, { flexDirection: 'column', alignItems: 'stretch', opacity: isUnlocked(profile, FREE_ID) ? 1 : 0.5 }]}>
-                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 28 }}>💬</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.cardTitle}>Modo Chat Livre</Text>
-                    <Text style={s.cardSub}>Prática aberta, sem roteiro. Escolha o tutor:</Text>
-                  </View>
-                  {!isUnlocked(profile, FREE_ID) && <Ionicons name="lock-closed" size={20} color={C.muted} />}
-                </View>
-                <View style={[s.row, { marginTop: 10, flexWrap: 'wrap' }]}>
-                  {(Object.keys(PERSONAS) as PersonaId[]).map((id) => (
-                    <Pressable key={id} style={s.chip} onPress={() => open({ id: FREE_ID } as Scenario, id)}>
-                      <Text style={s.chipText}>{PERSONAS[id].emoji} {PERSONAS[id].names[profile.lang].split(' (')[0]}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
+            <Ionicons name={done ? 'checkmark-circle' : 'chevron-forward'} size={22} color={done ? C.accent : C.muted} />
+          </Pressable>
         );
       })}
+
+      {MAIN_PHASES.map((raw) => renderPhase(phaseFor(raw, profile.field)))}
+      {EXTRA_PHASES.map((raw) => renderPhase(phaseFor(raw, profile.field)))}
     </ScrollView>
   );
 }
